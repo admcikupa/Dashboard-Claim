@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berita Acara Adjustment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            min-height: 10vh;
+        }
+        @media print {
+            body {
+                background-color: white;
+                margin: 0;
+            }
+            .document-container, .summary-container {
+                box-shadow: none;
+                border: 1px solid black;
+                padding: 2.5cm;
+            }
+            .sidebar, .edit-box, .action-buttons, .edit-form, .main-header, .print-hidden {
+                display: none !important;
+            }
+            @page {
+                size: A4 landscape;
+                margin: 0;
+            }
+        }
+        .edit-form {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background-color: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none;
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .edit-form.active {
+            display: block;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.active {
+            display: block;
+        }
+        .status-done {
+            color: green;
+            font-weight: bold;
+        }
+        .status-pending {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="flex flex-col bg-gray-100 font-sans">
+    
+    <header class="main-header bg-gray-800 text-white p-4 shadow-lg print-hidden">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <a href="#" class="text-white text-2xl font-bold uppercase tracking-wider">Dashboard</a>
+            </div>
+            <nav class="flex space-x-6">
+                <a href="#" id="beritaAcaraMenu" class="text-white hover:text-gray-300 transition duration-200">
+                    <i class="fas fa-file-alt mr-2"></i>Berita Acara
+                </a>
+                <a href="#" id="summaryMenu" class="text-white hover:text-gray-300 transition duration-200">
+                    <i class="fas fa-chart-pie mr-2"></i>Ringkasan
+                </a>
+                <a href="#" id="laporanMenu" class="text-white hover:text-gray-300 transition duration-200">
+                    <i class="fas fa-chart-line mr-2"></i>Laporan
+                </a>
+                <a href="#" class="text-white hover:text-gray-300 transition duration-200">
+                    <i class="fas fa-cog mr-2"></i>Pengaturan
+                </a>
+                <a href="#" class="text-white hover:text-gray-300 transition duration-200">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Keluar
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="flex flex-1 flex-col md:flex-row p-6 md:p-10 gap-6">
+
+        <div class="flex flex-col gap-6 w-full md:w-80 print-hidden">
+            <div id="editBox" class="edit-box bg-white p-6 shadow-lg rounded-lg border border-gray-400">
+                <h2 class="text-xl font-bold mb-4">Edit Dokumen</h2>
+                <p class="text-sm text-gray-500 mb-4">Ubah detail dokumen di bawah ini.</p>
+                
+                <div class="flex items-center space-x-2 mb-4">
+                    <span class="text-lg font-mono">NO. </span>
+                    <input type="text" id="docNumberInput" class="w-48 p-2 text-center border border-gray-300 rounded-lg font-bold text-lg">
+                    <span class="text-lg font-mono">/CMSS/25</span>
+                </div>
+
+                <div class="mb-4">
+                    <label for="ekspedisiInput" class="block text-sm font-medium text-gray-700">Nama Ekspedisi</label>
+                    <input type="text" id="ekspedisiInput" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg shadow-sm">
+                </div>
+
+                <div class="mb-4">
+                    <label for="createDateInput" class="block text-sm font-medium text-gray-700">Create Date</label>
+                    <input type="date" id="createDateInput" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg shadow-sm">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="printDateInput" class="block text-sm font-medium text-gray-700">Print Date</label>
+                    <input type="date" id="printDateInput" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg shadow-sm">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="sentDateInput" class="block text-sm font-medium text-gray-700">Tanggal Dikirim</label>
+                    <input type="date" id="sentDateInput" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg shadow-sm">
+                </div>
+
+                <div class="mb-4">
+                    <label for="receivedDateInput" class="block text-sm font-medium text-gray-700">Tanggal Diterima</label>
+                    <input type="date" id="receivedDateInput" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg shadow-sm">
+                </div>
+
+                <div class="mb-4">
+                    <label for="tujuanInput" class="block text-sm font-medium text-gray-700">Tujuan</label>
+                    <input type="text" id="tujuanInput" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg shadow-sm" placeholder="Contoh: MITRA10 BATAM">
+                </div>
+            </div>
+            <aside id="sidebar" class="md:h-full"></aside>
+        </div>
+
+        <div id="beritaAcaraView" class="document-container bg-white flex-1 p-8 md:p-12 shadow-lg rounded-lg border border-gray-400">
+            <header class="mb-6">
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800">BERITA ACARA ADJUSTMENT</h1>
+                <p id="docNumberDisplay" class="text-sm font-semibold text-red-600 cursor-pointer hover:underline">NO. 002/09/BTM/MCL/CMSS/25</p>
+            </header>
+
+            <section class="prose max-w-none text-gray-700 text-sm md:text-base mb-6">
+                <p>Dengan hormat,</p>
+                <p>Bersama surat ini kami PT.Catur Mitra Sejati Sentosa bermaksud mengajukan claim barang rusak atas pengiriman barang dengan rincian sebagai berikut:</p>
+            </section>
+
+            <section class="flex flex-col md:flex-row justify-between text-sm md:text-base text-gray-700 mb-6">
+                <div class="space-y-2">
+                    <div class="flex">
+                        <span class="w-24">STORE</span>
+                        <span class="ml-4">: 10062-DC CIKUPA</span>
+                    </div>
+                    <div class="flex">
+                        <span class="w-24">REASON</span>
+                        <span class="ml-4 bg-yellow-200 px-1 py-0.5 rounded-sm">: Adjust Claim Ekspedisi</span>
+                    </div>
+                    <div class="flex">
+                        <span class="w-24">EKSPEDISI</span>
+                        <span id="ekspedisiDisplay" class="ml-4">: MEGA CIPTA LOGISTIC (MCL)</span>
+                    </div>
+                </div>
+                <div class="space-y-2 mt-4 md:mt-0 md:text-right">
+                    <div class="flex justify-start md:justify-end">
+                        <span class="w-32" id="createDateMonth">Bulan</span>
+                        <span id="createDateDisplay" class="md:ml-4">: September 2025</span>
+                    </div>
+                    <div class="flex justify-start md:justify-end">
+                        <span class="w-32" id="printDateMonth">Bulan</span>
+                        <span id="printDateDisplay" class="md:ml-4">: September 2025</span>
+                    </div>
+                    <div class="flex justify-start md:justify-end">
+                        <span class="w-32" id="sentDateMonth">Bulan</span>
+                        <span id="sentDateDisplay" class="md:ml-4">: -</span>
+                    </div>
+                    <div class="flex justify-start md:justify-end">
+                        <span class="w-32" id="receivedDateMonth">Bulan</span>
+                        <span id="receivedDateDisplay" class="md:ml-4">: -</span>
+                    </div>
+                    <div class="flex justify-start md:justify-end">
+                        <span class="w-32">TUJUAN</span>
+                        <span id="tujuanDisplay" class="md:ml-4">: MITRA10 BATAM</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mt-8 overflow-x-auto">
+                <div class="mt-4 flex justify-end items-center print-hidden">
+                    <button id="printDocBtn" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">Cetak Dokumen</button>
+                </div>
+                <table id="dataTable" class="min-w-full bg-white border border-black text-xs md:text-sm">
+                    <thead>
+                        <tr class="bg-gray-200 border-b border-black">
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">NO CONTAINER</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">NO LM</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">ITEM NO</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">DESCRIPTION</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">UOM</th>
+                            <th class="py-2 px-2 text-right font-bold uppercase border-r border-black">QTY ADJUST</th>
+                            <th class="py-2 px-2 text-right font-bold uppercase border-r border-black">FIX PRICE/UNIT</th>
+                            <th class="py-2 px-2 text-right font-bold uppercase">TOTAL PRICE</th>
+                            <th class="py-2 px-2 text-center font-bold uppercase print-hidden">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-black">
+                            <td class="py-2 px-2 border-r border-black whitespace-nowrap" data-label="NO CONTAINER">TCNU2521446</td>
+                            <td class="py-2 px-2 border-r border-black whitespace-nowrap" data-label="NO LM">LM100622500000956346</td>
+                            <td class="py-2 px-2 border-r border-black whitespace-nowrap" data-label="ITEM NO">0100028660</td>
+                            <td class="py-2 px-2 border-r border-black" data-label="DESCRIPTION">DURAFLOOR 60X60/1.44 FG606083/SHQ6019-3T MATT GLZD</td>
+                            <td class="py-2 px-2 border-r border-black whitespace-nowrap" data-label="UOM">BOX</td>
+                            <td class="py-2 px-2 text-right border-r border-black whitespace-nowrap" data-label="QTY ADJUST">-2</td>
+                            <td class="py-2 px-2 text-right border-r border-black whitespace-nowrap" data-label="FIX PRICE/UNIT">-137.530</td>
+                            <td class="py-2 px-2 text-right whitespace-nowrap" data-label="TOTAL PRICE">275.061</td>
+                            <td class="py-2 px-2 text-center action-buttons">
+                                <button onclick="editRow(this)" class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs">Edit</button>
+                                <button onclick="deleteRow(this)" class="bg-red-500 text-white px-2 py-1 rounded-md text-xs">Hapus</button>
+                            </td>
+                        </tr>
+                        <tr class="bg-yellow-200 border-t-2 border-black font-bold text-black">
+                            <td colspan="4" class="py-2 px-2 text-left uppercase border-r border-black"></td>
+                            <td class="py-2 px-2 text-center uppercase border-r border-black">TOTAL</td>
+                            <td id="totalQty" class="py-2 px-2 text-right border-r border-black whitespace-nowrap">-2</td>
+                            <td class="py-2 px-2 text-right border-r border-black"></td>
+                            <td id="totalPrice" class="py-2 px-2 text-right whitespace-nowrap">275.061</td>
+                            <td class="py-2 px-2 text-center"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="mt-4 flex justify-between items-center print-hidden">
+                    <div>
+                        <button id="addRowBtn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tambah Baris</button>
+                        <button id="deleteAllBtn" class="bg-red-500 text-white px-4 py-2 rounded-md ml-2 hover:bg-red-600">Hapus Semua</button>
+                    </div>
+                    <div>
+                        <button id="verifyAndSaveBtn" class="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600">Verifikasi & Simpan BA</button>
+                        <button id="exportCsvBtn" class="bg-gray-500 text-white px-4 py-2 rounded-md ml-2 hover:bg-gray-600">Export ke XLSX</button>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="mt-16 text-gray-700 text-sm">
+                <div class="flex flex-row flex-nowrap justify-between overflow-x-auto gap-4 md:gap-8 lg:gap-12 items-end">
+                    
+                    <div class="flex-1 text-center min-w-[100px] flex flex-col justify-end">
+                        <span class="whitespace-nowrap pb-1">Dibuat oleh,</span>
+                        <div class="w-full border-b border-gray-400 mt-8 pb-4"></div>
+                        <span class="pt-2 whitespace-nowrap text-xs">ADMIN</span>
+                    </div>
+
+                    <div class="flex-1 text-center min-w-[100px] flex flex-col justify-end">
+                        <span class="whitespace-nowrap pb-1">&nbsp;</span>
+                        <div class="w-full border-b border-gray-400 mt-8 pb-4"></div>
+                        <span class="pt-2 whitespace-nowrap text-xs">TL ADMIN</span>
+                    </div>
+
+                    <div class="flex-1 text-center min-w-[100px] flex flex-col justify-end">
+                        <span class="whitespace-nowrap pb-1">&nbsp;</span>
+                        <div class="w-full border-b border-gray-400 mt-8 pb-4"></div>
+                        <span class="pt-2 whitespace-nowrap text-xs">TL LP</span>
+                    </div>
+
+                    <div class="flex-1 text-center min-w-[100px] flex flex-col justify-end">
+                        <span class="whitespace-nowrap pb-1">&nbsp;</span>
+                        <div class="w-full border-b border-gray-400 mt-8 pb-4"></div>
+                        <span class="pt-2 whitespace-nowrap text-xs">MOD</span>
+                    </div>
+
+                    <div class="flex-1 text-center min-w-[100px] flex flex-col justify-end">
+                        <span class="whitespace-nowrap pb-1">Mengetahui oleh,</span>
+                        <div class="w-full border-b border-gray-400 mt-8 pb-4"></div>
+                        <span class="pt-2 whitespace-nowrap text-xs">DCM</span>
+                    </div>
+
+                    <div class="flex-1 text-center min-w-[100px] flex flex-col justify-end">
+                        <span class="whitespace-nowrap pb-1">Disetujui oleh, Expedisi</span>
+                        <div class="w-full border-b border-gray-400 mt-8 pb-4"></div>
+                        <span class="pt-2 whitespace-nowrap text-xs">EKSPEDISI</span>
+                    </div>
+                    
+                    <div class="flex-1 text-center min-w-[100px] flex flex-col justify-end">
+                        <span class="whitespace-nowrap">Diketahui oleh,</span>
+                        <div class="w-full border-b border-gray-400 pb-2 mt-8"></div>
+                        <span class="pt-2 whitespace-nowrap text-xs">Acct. Manager</span>
+                    </div>
+                    
+                    <div class="flex-1 text-center min-w-[100px] flex flex-col justify-end">
+                        <span class="whitespace-nowrap">Di adjust Oleh,</span>
+                        <div class="w-full border-b border-gray-400 pb-2 mt-8"></div>
+                        <span class="pt-2 whitespace-nowrap text-xs">Acct</span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+        
+        <div id="summaryView" class="summary-container bg-white flex-1 p-8 md:p-12 shadow-lg rounded-lg border border-gray-400 hidden">
+            <header class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Ringkasan Laporan Bulanan</h1>
+                <p class="text-sm text-gray-500">Ringkasan data Berita Acara berdasarkan status dan ekspedisi.</p>
+            </header>
+
+            <div id="summaryContent">
+                </div>
+            
+            <div class="mt-8 flex justify-between items-center print-hidden">
+                <input type="file" id="importSummaryFile" class="hidden" accept=".csv, .xlsx">
+                <button onclick="document.getElementById('importSummaryFile').click()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Import File</button>
+                <button id="exportSummaryXlsxBtn" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">Export Ringkasan ke XLSX</button>
+            </div>
+        </div>
+
+        <div id="laporanView" class="document-container bg-white flex-1 p-8 md:p-12 shadow-lg rounded-lg border border-gray-400 hidden">
+            <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-6">RINGKASAN LAPORAN</h1>
+            
+            <div class="filter-section flex items-center space-x-4 mb-4 mt-4 print-hidden">
+                <label for="filterBulan" class="font-bold">Bulan:</label>
+                <select id="filterBulan" class="border p-1 rounded">
+                    <option value="">Semua</option>
+                </select>
+
+                <label for="filterEkspedisi" class="font-bold">Ekspedisi:</label>
+                <input type="text" id="filterEkspedisi" placeholder="Cari ekspedisi..." class="border p-1 rounded">
+
+                <label for="filterStatus" class="font-bold">Status:</label>
+                <select id="filterStatus" class="border p-1 rounded">
+                    <option value="">Semua</option>
+                    <option value="Done">Selesai</option>
+                    <option value="Belum Selesai">Belum Selesai</option>
+                </select>
+
+                <label for="filterLm" class="font-bold">No. LM:</label>
+                <input type="text" id="filterLm" placeholder="Cari No. LM..." class="border p-1 rounded">
+            </div>
+            <div class="mt-4 mb-4 flex justify-between items-center print-hidden">
+                <div>
+                    <input type="file" id="importLaporanFile" class="hidden" accept=".csv">
+                    <button onclick="document.getElementById('importLaporanFile').click()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Import Data</button>
+                </div>
+            </div>
+            
+            <section class="mt-8 overflow-x-auto">
+                <table id="laporanTable" class="min-w-full bg-white border border-black text-xs md:text-sm">
+                    <thead>
+                        <tr class="bg-gray-200 border-b border-black">
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">STATUS</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">NO. BA</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">BULAN</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">TANGGAL</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">NAMA EKSPEDISI</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">TUJUAN</th>
+                            <th class="py-2 px-2 text-right font-bold uppercase border-r border-black">TOTAL HARGA</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">TANGGAL EMAIL KE EXPEDISI</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">TANGGAL DI APPROVAL EXPEDISI</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">TANGGAL EMAIL KE ACCOUNTING</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">TANGGAL ADJUSTMENT</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">NO ADJUSTMENT</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">TANGGAL ADJUST WMS</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">PENGAJUAN KE BERAPA</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">KETERANGAN UPDATE</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">NO CONTAINER</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">NO LM</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">ITEM NO</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">DESCRIPTION</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">UOM</th>
+                            <th class="py-2 px-2 text-right font-bold uppercase border-r border-black">QTY ADJUST</th>
+                            <th class="py-2 px-2 text-left font-bold uppercase border-r border-black">LPN</th>
+                            <th class="py-2 px-2 text-right font-bold uppercase border-r border-black">FIX PRICE/UNIT</th>
+                            <th class="py-2 px-2 text-center font-bold uppercase print-hidden">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="laporan-body">
+                        </tbody>
+                </table>
+                <div class="mt-4 flex justify-between items-center print-hidden">
+                    <button id="addLaporanRowBtn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tambah Baris Laporan</button>
+                    <button id="exportLaporanCsvBtn" class="bg-gray-500 text-white px-4 py-2 rounded-md ml-2 hover:bg-gray-600">Export Laporan ke XLSX</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="editForm" class="edit-form">
+        <h3 class="text-lg font-bold mb-4">Edit Baris</h3>
+        <div class="space-y-4">
+            <div>
+                <label for="editContainer" class="block text-sm font-medium text-gray-700">No. Container</label>
+                <input type="text" id="editContainer" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLm" class="block text-sm font-medium text-gray-700">No. LM</label>
+                <input type="text" id="editLm" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editItemNo" class="block text-sm font-medium text-gray-700">Item No</label>
+                <input type="text" id="editItemNo" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editDescription" class="block text-sm font-medium text-gray-700">Description</label>
+                <input type="text" id="editDescription" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editUom" class="block text-sm font-medium text-gray-700">UOM</label>
+                <input type="text" id="editUom" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editQty" class="block text-sm font-medium text-gray-700">Qty Adjust</label>
+                <input type="number" id="editQty" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editPrice" class="block text-sm font-medium text-gray-700">Fix Price/Unit</label>
+                <input type="number" id="editPrice" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end space-x-2">
+            <button onclick="saveChanges(this)" class="bg-green-500 text-white px-4 py-2 rounded-md">Simpan</button>
+            <button onclick="closeForm()" class="bg-gray-400 text-white px-4 py-2 rounded-md">Batal</button>
+        </div>
+    </div>
+
+    <div id="laporanEditForm" class="edit-form">
+        <h3 class="text-lg font-bold mb-4">Edit Baris Laporan</h3>
+        <div class="space-y-4">
+            <div>
+                <label for="editLaporanNoBA" class="block text-sm font-medium text-gray-700">No. BA</label>
+                <input type="text" id="editLaporanNoBA" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanBulan" class="block text-sm font-medium text-gray-700">Bulan</label>
+                <input type="text" id="editLaporanBulan" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg" readonly>
+            </div>
+            <div>
+                <label for="editLaporanTanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                <input type="date" id="editLaporanTanggal" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanEkspedisi" class="block text-sm font-medium text-gray-700">Nama Ekspedisi</label>
+                <input type="text" id="editLaporanEkspedisi" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanTotalHarga" class="block text-sm font-medium text-gray-700">Total Harga</label>
+                <input type="number" id="editLaporanTotalHarga" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanTujuan" class="block text-sm font-medium text-gray-700">Tujuan</label>
+                <input type="text" id="editLaporanTujuan" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanTanggalEmail" class="block text-sm font-medium text-gray-700">Tanggal Email ke Expedisi</label>
+                <input type="date" id="editLaporanTanggalEmail" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanTanggalApprovalExpedisi" class="block text-sm font-medium text-gray-700">Tanggal di Approval Expedisi</label>
+                <input type="date" id="editLaporanTanggalApprovalExpedisi" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanTanggalEmailAccounting" class="block text-sm font-medium text-gray-700">Tanggal Email ke Accounting</label>
+                <input type="date" id="editLaporanTanggalEmailAccounting" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanTanggalAdjustment" class="block text-sm font-medium text-gray-700">Tanggal Adjustment</label>
+                <input type="date" id="editLaporanTanggalAdjustment" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanNoAdjustment" class="block text-sm font-medium text-gray-700">No. Adjustment</label>
+                <input type="text" id="editLaporanNoAdjustment" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanTanggalAdjustWMS" class="block text-sm font-medium text-gray-700">Tanggal Adjust WMS</label>
+                <input type="date" id="editLaporanTanggalAdjustWMS" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanPengajuanKeBerapa" class="block text-sm font-medium text-gray-700">Pengajuan ke Berapa</label>
+                <input type="number" id="editLaporanPengajuanKeBerapa" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanKeteranganUpdate" class="block text-sm font-medium text-gray-700">Keterangan Update</label>
+                <input type="text" id="editLaporanKeteranganUpdate" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div class="border-t border-gray-300 pt-4 mt-4">
+                <p class="font-bold text-gray-700">Detail Item:</p>
+            </div>
+            <div>
+                <label for="editLaporanContainer" class="block text-sm font-medium text-gray-700">No. Container</label>
+                <input type="text" id="editLaporanContainer" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanLm" class="block text-sm font-medium text-gray-700">No. LM</label>
+                <input type="text" id="editLaporanLm" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanItemNo" class="block text-sm font-medium text-gray-700">Item No</label>
+                <input type="text" id="editLaporanItemNo" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanDescription" class="block text-sm font-medium text-gray-700">Description</label>
+                <input type="text" id="editLaporanDescription" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanUom" class="block text-sm font-medium text-gray-700">UOM</label>
+                <input type="text" id="editLaporanUom" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanQty" class="block text-sm font-medium text-gray-700">Qty Adjust</label>
+                <input type="number" id="editLaporanQty" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanLpn" class="block text-sm font-medium text-gray-700">LPN</label>
+                <input type="text" id="editLaporanLpn" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+                <label for="editLaporanPrice" class="block text-sm font-medium text-gray-700">Fix Price/Unit</label>
+                <input type="number" id="editLaporanPrice" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end space-x-2">
+            <button onclick="saveLaporanChanges()" class="bg-green-500 text-white px-4 py-2 rounded-md">Simpan</button>
+            <button onclick="closeLaporanForm()" class="bg-gray-400 text-white px-4 py-2 rounded-md">Batal</button>
+        </div>
+    </div>
+    
+    <div id="overlay" class="overlay"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const docNumberDisplay = document.getElementById('docNumberDisplay');
+            const docNumberInput = document.getElementById('docNumberInput');
+            const ekspedisiDisplay = document.getElementById('ekspedisiDisplay');
+            const ekspedisiInput = document.getElementById('ekspedisiInput');
+            const createDateMonth = document.getElementById('createDateMonth');
+            const createDateDisplay = document.getElementById('createDateDisplay');
+            const createDateInput = document.getElementById('createDateInput');
+            const printDateMonth = document.getElementById('printDateMonth');
+            const printDateDisplay = document.getElementById('printDateDisplay');
+            const printDateInput = document.getElementById('printDateInput');
+            const sentDateMonth = document.getElementById('sentDateMonth');
+            const sentDateDisplay = document.getElementById('sentDateDisplay');
+            const sentDateInput = document.getElementById('sentDateInput');
+            const receivedDateMonth = document.getElementById('receivedDateMonth');
+            const receivedDateDisplay = document.getElementById('receivedDateDisplay');
+            const receivedDateInput = document.getElementById('receivedDateInput');
+            const tujuanDisplay = document.getElementById('tujuanDisplay');
+            const tujuanInput = document.getElementById('tujuanInput');
+            const dataTable = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+            const addRowBtn = document.getElementById('addRowBtn');
+            const deleteAllBtn = document.getElementById('deleteAllBtn');
+            const editForm = document.getElementById('editForm');
+            const verifyAndSaveBtn = document.getElementById('verifyAndSaveBtn');
+            const exportCsvBtn = document.getElementById('exportCsvBtn');
+            const printDocBtn = document.getElementById('printDocBtn');
+            const beritaAcaraView = document.getElementById('beritaAcaraView');
+            const laporanView = document.getElementById('laporanView');
+            const summaryView = document.getElementById('summaryView');
+            const summaryContent = document.getElementById('summaryContent');
+            const summaryMenu = document.getElementById('summaryMenu');
+            const laporanMenu = document.getElementById('laporanMenu');
+            const beritaAcaraMenu = document.getElementById('beritaAcaraMenu');
+            const laporanTableBody = document.getElementById('laporan-body');
+            const addLaporanRowBtn = document.getElementById('addLaporanRowBtn');
+            const laporanEditForm = document.getElementById('laporanEditForm');
+            const exportLaporanCsvBtn = document.getElementById('exportLaporanCsvBtn');
+            const exportSummaryXlsxBtn = document.getElementById('exportSummaryXlsxBtn');
+            const overlay = document.getElementById('overlay');
+            const importSummaryFile = document.getElementById('importSummaryFile');
+            const importLaporanFile = document.getElementById('importLaporanFile');
+            
+            // Filter elements
+            const filterBulan = document.getElementById('filterBulan');
+            const filterEkspedisi = document.getElementById('filterEkspedisi');
+            const filterStatus = document.getElementById('filterStatus');
+            const filterLm = document.getElementById('filterLm');
+
+            let currentRow = null;
+            let currentLaporanRow = null;
+            let currentLaporanItemIndex = null;
+            let savedDocuments = [];
+
+            const saveToLocalStorage = () => {
+                localStorage.setItem('beritaAcaraData', JSON.stringify(savedDocuments));
+            };
+
+            const loadFromLocalStorage = () => {
+                const data = localStorage.getItem('beritaAcaraData');
+                if (data) {
+                    savedDocuments = JSON.parse(data);
+                }
+            };
+            
+            const formatDate = (dateString) => {
+                if (!dateString) return '-';
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return dateString;
+                }
+                const options = { day: '2-digit', month: 'long', year: 'numeric' };
+                return date.toLocaleDateString('id-ID', options);
+            };
+
+            const formatMonth = (dateString) => {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return '';
+                }
+                const options = { month: 'long' };
+                return date.toLocaleDateString('id-ID', options).toUpperCase();
+            };
+            
+            const formatDateForInput = (dateString) => {
+                if (!dateString || dateString === '-') return '';
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return '';
+                }
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const calculateTotals = () => {
+                let totalQty = 0;
+                let totalPrice = 0;
+                const rows = dataTable.getElementsByTagName('tr');
+                for (let i = 0; i < rows.length - 1; i++) { 
+                    const row = rows[i];
+                    const cells = row.getElementsByTagName('td');
+                    if (cells.length > 1) { 
+                        const qty = parseFloat(cells[5].textContent.replace(',', '.').replace(/^-/, '') || 0);
+                        const price = parseFloat(cells[6].textContent.replace(',', '.').replace(/^-/, '') || 0);
+                        const rowTotal = qty * price;
+                        totalQty += isNaN(qty) ? 0 : qty;
+                        totalPrice += isNaN(rowTotal) ? 0 : rowTotal;
+                    }
+                }
+                document.getElementById('totalQty').textContent = totalQty.toFixed(0);
+                document.getElementById('totalPrice').textContent = totalPrice.toFixed(3);
+            };
+
+            window.editRow = (button) => {
+                currentRow = button.closest('tr');
+                const cells = currentRow.getElementsByTagName('td');
+                document.getElementById('editContainer').value = cells[0].textContent.trim();
+                document.getElementById('editLm').value = cells[1].textContent.trim();
+                document.getElementById('editItemNo').value = cells[2].textContent.trim();
+                document.getElementById('editDescription').value = cells[3].textContent.trim();
+                document.getElementById('editUom').value = cells[4].textContent.trim();
+                document.getElementById('editQty').value = cells[5].textContent.trim().replace(',', '.');
+                document.getElementById('editPrice').value = cells[6].textContent.trim().replace(',', '.');
+                editForm.classList.add('active');
+                overlay.classList.add('active');
+            };
+
+            window.saveChanges = () => {
+                if (currentRow) {
+                    const cells = currentRow.getElementsByTagName('td');
+                    const qty = parseFloat(document.getElementById('editQty').value.replace(',', '.')) || 0;
+                    const price = parseFloat(document.getElementById('editPrice').value.replace(',', '.')) || 0;
+                    const newTotal = qty * price;
+                    
+                    cells[0].textContent = document.getElementById('editContainer').value;
+                    cells[1].textContent = document.getElementById('editLm').value;
+                    cells[2].textContent = document.getElementById('editItemNo').value;
+                    cells[3].textContent = document.getElementById('editDescription').value;
+                    cells[4].textContent = document.getElementById('editUom').value;
+                    cells[5].textContent = qty.toFixed(0);
+                    cells[6].textContent = price.toFixed(3);
+                    cells[7].textContent = newTotal.toFixed(3);
+
+                    calculateTotals();
+                    closeForm();
+                }
+            };
+            
+            window.closeForm = () => {
+                editForm.classList.remove('active');
+                overlay.classList.remove('active');
+                currentRow = null;
+            };
+
+            window.deleteRow = (button) => {
+                const row = button.closest('tr');
+                row.remove();
+                calculateTotals();
+            };
+
+            addRowBtn.addEventListener('click', () => {
+                const newRow = dataTable.insertRow(dataTable.rows.length - 1);
+                newRow.className = "border-b border-black";
+                newRow.innerHTML = `
+                    <td class="py-2 px-2 border-r border-black whitespace-nowrap" data-label="NO CONTAINER"></td>
+                    <td class="py-2 px-2 border-r border-black whitespace-nowrap" data-label="NO LM"></td>
+                    <td class="py-2 px-2 border-r border-black whitespace-nowrap" data-label="ITEM NO"></td>
+                    <td class="py-2 px-2 border-r border-black" data-label="DESCRIPTION"></td>
+                    <td class="py-2 px-2 border-r border-black whitespace-nowrap" data-label="UOM"></td>
+                    <td class="py-2 px-2 text-right border-r border-black whitespace-nowrap" data-label="QTY ADJUST">0</td>
+                    <td class="py-2 px-2 text-right border-r border-black whitespace-nowrap" data-label="FIX PRICE/UNIT">0</td>
+                    <td class="py-2 px-2 text-right whitespace-nowrap" data-label="TOTAL PRICE">0</td>
+                    <td class="py-2 px-2 text-center action-buttons print-hidden">
+                        <button onclick="editRow(this)" class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs">Edit</button>
+                        <button onclick="deleteRow(this)" class="bg-red-500 text-white px-2 py-1 rounded-md text-xs">Hapus</button>
+                    </td>
+                `;
+                calculateTotals();
+            });
+
+            deleteAllBtn.addEventListener('click', () => {
+                while (dataTable.rows.length > 1) {
+                    dataTable.deleteRow(0);
+                }
+                calculateTotals();
+            });
+
+            verifyAndSaveBtn.addEventListener('click', () => {
+                const docNumber = docNumberInput.value;
+                const ekspedisiName = ekspedisiInput.value;
+                const tujuanName = tujuanInput.value;
+                const createDate = createDateInput.value;
+                const totalPrice = document.getElementById('totalPrice').textContent;
+
+                if (!docNumber || !ekspedisiName || !createDate || dataTable.rows.length <= 1) {
+                    alert('Harap isi Nomor Dokumen, Nama Ekspedisi, Tanggal, dan pastikan tabel tidak kosong.');
+                    return;
+                }
+
+                const confirmMessage = `Apakah Anda yakin ingin menyimpan dokumen ini?\n\n` +
+                                     `No. BA: ${docNumber}\n` +
+                                     `Ekspedisi: ${ekspedisiName}\n` +
+                                     `Tanggal: ${formatDate(createDate)}\n` +
+                                     `Total Harga: ${totalPrice}`;
+
+                if (confirm(confirmMessage)) {
+                    const itemDetails = [];
+                    const rows = dataTable.querySelectorAll("tbody tr:not(.bg-yellow-200)");
+                    rows.forEach(row => {
+                        const cells = row.querySelectorAll("td:not(.action-buttons)");
+                        itemDetails.push({
+                            container: cells[0].textContent,
+                            lm: cells[1].textContent,
+                            itemNo: cells[2].textContent,
+                            description: cells[3].textContent,
+                            uom: cells[4].textContent,
+                            qtyAdjust: cells[5].textContent,
+                            fixPrice: cells[6].textContent
+                        });
+                    });
+
+                    const newDocument = {
+                        noBA: docNumber,
+                        tanggal: formatDate(createDate),
+                        ekspedisi: ekspedisiName,
+                        tujuan: tujuanName,
+                        totalHarga: parseFloat(totalPrice.replace(',', '.')) || 0,
+                        items: itemDetails,
+                        tanggalEmailExpedisi: '-',
+                        tanggalApprovalExpedisi: '-',
+                        tanggalEmailAccounting: '-',
+                        tanggalAdjustment: '-',
+                        noAdjustment: '',
+                        tanggalAdjustWMS: '-',
+                        pengajuanKeBerapa: '-',
+                        keteranganUpdate: '',
+                        lpn: '-'
+                    };
+                    savedDocuments.push(newDocument);
+                    saveToLocalStorage();
+                    alert(`Dokumen BA No. ${docNumber} berhasil disimpan!`);
+                    populateMonthFilter();
+                    renderLaporan();
+                    renderSummary();
+                }
+            });
+
+            exportCsvBtn.addEventListener('click', () => {
+                let csv = [];
+                const docNumber = docNumberInput.value;
+                const storeName = '10062-DC CIKUPA';
+                const ekspedisiName = ekspedisiInput.value;
+                const tujuanName = tujuanInput.value;
+                const headers = ["No berita acara adjustment", "STORE", "ekspedisi", "tujuan", "NO CONTAINER", "NO LM", "ITEM NO", "DESCRIPTION", "UOM", "QTY ADJUST", "FIX PRICE/UNIT", "TOTAL PRICE"];
+                csv.push(headers.join(","));
+                const rows = dataTable.querySelectorAll("tbody tr:not(.bg-yellow-200)");
+                rows.forEach(row => {
+                    const rowData = [docNumber, storeName, ekspedisiName, tujuanName];
+                    const cells = row.querySelectorAll("td:not(.action-buttons)");
+                    cells.forEach((cell) => {
+                        const data = cell.textContent.trim().replace(/,/g, "");
+                        rowData.push(data);
+                    });
+                    if (rowData.length > 0) {
+                        csv.push(rowData.join(","));
+                    }
+                });
+                const csvString = csv.join("\n");
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.setAttribute("href", URL.createObjectURL(blob));
+                link.setAttribute("download", `berita_acara_${docNumber}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+            printDocBtn.addEventListener('click', () => {
+                window.print();
+            });
+
+            // Filter logic starts here
+            const populateMonthFilter = () => {
+                filterBulan.innerHTML = '<option value="">Semua</option>';
+                const allDates = savedDocuments.map(doc => doc.tanggal).filter(date => date !== '-');
+                const months = [...new Set(allDates.map(date => {
+                    const d = new Date(date);
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                }))].sort();
+
+                months.forEach(monthKey => {
+                    const [year, month] = monthKey.split('-');
+                    const date = new Date(year, month - 1, 1);
+                    const option = document.createElement('option');
+                    option.value = monthKey;
+                    option.textContent = formatMonth(date.toISOString().slice(0, 10)) + ' ' + year;
+                    filterBulan.appendChild(option);
+                });
+            };
+
+            const renderLaporan = () => {
+                laporanTableBody.innerHTML = '';
+                
+                // Get filter values
+                const selectedMonth = filterBulan.value;
+                const selectedEkspedisi = filterEkspedisi.value.toLowerCase();
+                const selectedStatus = filterStatus.value;
+                const selectedLm = filterLm.value.toLowerCase();
+
+                // Filter documents based on criteria
+                let filteredDocuments = savedDocuments.filter(doc => {
+                    const docDate = new Date(doc.tanggal);
+                    const docMonthKey = `${docDate.getFullYear()}-${String(docDate.getMonth() + 1).padStart(2, '0')}`;
+                    const statusText = doc.noAdjustment && doc.noAdjustment !== '' ? 'Done' : 'Belum Selesai';
+
+                    const matchesMonth = selectedMonth === '' || docMonthKey === selectedMonth;
+                    const matchesEkspedisi = doc.ekspedisi.toLowerCase().includes(selectedEkspedisi);
+                    const matchesStatus = selectedStatus === '' || statusText === selectedStatus;
+                    const matchesLm = doc.items.some(item => item.lm.toLowerCase().includes(selectedLm));
+
+                    return matchesMonth && matchesEkspedisi && matchesStatus && matchesLm;
+                });
+
+                if (filteredDocuments.length === 0) {
+                    laporanTableBody.innerHTML = '<tr><td colspan="24" class="text-center py-4 text-gray-500">Tidak ada data yang cocok.</td></tr>';
+                    return;
+                }
+
+                filteredDocuments.forEach((doc, docIndex) => {
+                    const statusText = doc.noAdjustment && doc.noAdjustment !== '' ? 'Done' : 'Belum Selesai';
+                    const statusClass = doc.noAdjustment && doc.noAdjustment !== '' ? 'status-done' : 'status-pending';
+                    const bulan = doc.tanggal !== '-' ? formatMonth(doc.tanggal) : '-';
+
+                    if (doc.items && doc.items.length > 0) {
+                        doc.items.forEach((item, itemIndex) => {
+                            const row = laporanTableBody.insertRow();
+                            row.innerHTML = `
+                                <td class="py-2 px-2 border-r border-black ${statusClass}">${statusText}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.noBA}</td>
+                                <td class="py-2 px-2 border-r border-black">${bulan}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.tanggal}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.ekspedisi}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.tujuan}</td>
+                                <td class="py-2 px-2 text-right border-r border-black">${(parseFloat(doc.totalHarga)).toLocaleString('id-ID', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.tanggalEmailExpedisi}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.tanggalApprovalExpedisi}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.tanggalEmailAccounting}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.tanggalAdjustment}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.noAdjustment}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.tanggalAdjustWMS}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.pengajuanKeBerapa}</td>
+                                <td class="py-2 px-2 border-r border-black">${doc.keteranganUpdate}</td>
+                                <td class="py-2 px-2 border-r border-black">${item.container}</td>
+                                <td class="py-2 px-2 border-r border-black">${item.lm}</td>
+                                <td class="py-2 px-2 border-r border-black">${item.itemNo}</td>
+                                <td class="py-2 px-2 border-r border-black">${item.description}</td>
+                                <td class="py-2 px-2 border-r border-black">${item.uom}</td>
+                                <td class="py-2 px-2 text-right border-r border-black">${item.qtyAdjust}</td>
+                                <td class="py-2 px-2 border-r border-black">${item.lpn || '-'}</td>
+                                <td class="py-2 px-2 text-right border-r border-black">${item.fixPrice}</td>
+                                <td class="py-2 px-2 text-center action-buttons">
+                                    <button onclick="editLaporanRow(${savedDocuments.indexOf(doc)}, ${itemIndex})" class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs">Edit</button>
+                                    <button onclick="deleteLaporanRow(${savedDocuments.indexOf(doc)}, ${itemIndex})" class="bg-red-500 text-white px-2 py-1 rounded-md text-xs">Hapus</button>
+                                </td>
+                            `;
+                        });
+                    } else {
+                        const row = laporanTableBody.insertRow();
+                        row.innerHTML = `
+                            <td class="py-2 px-2 border-r border-black ${statusClass}">${statusText}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.noBA}</td>
+                            <td class="py-2 px-2 border-r border-black">${bulan}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.tanggal}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.ekspedisi}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.tujuan}</td>
+                            <td class="py-2 px-2 text-right border-r border-black">${(parseFloat(doc.totalHarga)).toLocaleString('id-ID', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.tanggalEmailExpedisi}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.tanggalApprovalExpedisi}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.tanggalEmailAccounting}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.tanggalAdjustment}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.noAdjustment}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.tanggalAdjustWMS}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.pengajuanKeBerapa}</td>
+                            <td class="py-2 px-2 border-r border-black">${doc.keteranganUpdate}</td>
+                            <td class="py-2 px-2 border-r border-black">-</td>
+                            <td class="py-2 px-2 border-r border-black">-</td>
+                            <td class="py-2 px-2 border-r border-black">-</td>
+                            <td class="py-2 px-2 border-r border-black">-</td>
+                            <td class="py-2 px-2 border-r border-black">-</td>
+                            <td class="py-2 px-2 text-right border-r border-black">-</td>
+                            <td class="py-2 px-2 border-r border-black">-</td>
+                            <td class="py-2 px-2 text-right border-r border-black">-</td>
+                            <td class="py-2 px-2 text-center action-buttons">
+                                <button onclick="editLaporanRow(${savedDocuments.indexOf(doc)}, -1)" class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs">Edit</button>
+                                <button onclick="deleteLaporanRow(${savedDocuments.indexOf(doc)}, -1)" class="bg-red-500 text-white px-2 py-1 rounded-md text-xs">Hapus</button>
+                            </td>
+                        `;
+                    }
+                });
+            };
+            
+            filterBulan.addEventListener('change', renderLaporan);
+            filterEkspedisi.addEventListener('input', renderLaporan);
+            filterStatus.addEventListener('change', renderLaporan);
+            filterLm.addEventListener('input', renderLaporan);
+            // Filter logic ends here
+
+            const renderSummary = () => {
+                summaryContent.innerHTML = '';
+                const pendingSummary = {};
+                const doneSummary = {};
+                let pendingGrandTotal = 0;
+                let doneGrandTotal = 0;
+
+                savedDocuments.forEach(doc => {
+                    const status = doc.noAdjustment && doc.noAdjustment !== '' ? 'done' : 'pending';
+                    const summary = status === 'done' ? doneSummary : pendingSummary;
+                    const grandTotal = parseFloat(doc.totalHarga) || 0;
+
+                    if (!summary[doc.ekspedisi]) {
+                        summary[doc.ekspedisi] = {
+                            count: 0,
+                            totalPrice: 0
+                        };
+                    }
+                    summary[doc.ekspedisi].count++;
+                    summary[doc.ekspedisi].totalPrice += grandTotal;
+                });
+
+                // Helper function to format currency
+                const formatCurrency = (amount) => {
+                    return `Rp ${amount.toLocaleString('id-ID', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
+                };
+
+                // Helper function to generate table HTML
+                const generateTableHTML = (data, title, colorClass) => {
+                    if (Object.keys(data).length === 0) {
+                        return `<h2 class="text-xl font-semibold ${colorClass} mb-4">${title}</h2><p class="text-gray-500 mb-8">Tidak ada data untuk status ini.</p>`;
+                    }
+
+                    let tableRows = '';
+                    let totalCount = 0;
+                    let grandTotal = 0;
+                    Object.keys(data).forEach((ekspedisi, index) => {
+                        totalCount += data[ekspedisi].count;
+                        grandTotal += data[ekspedisi].totalPrice;
+                        tableRows += `
+                            <tr class="border-b border-gray-300 hover:bg-gray-100">
+                                <td class="py-3 px-4 text-center">${index + 1}</td>
+                                <td class="py-3 px-4">${ekspedisi}</td>
+                                <td class="py-3 px-4 text-center">${data[ekspedisi].count} Dokumen</td>
+                                <td class="py-3 px-4 text-right font-bold">${formatCurrency(data[ekspedisi].totalPrice)}</td>
+                            </tr>
+                        `;
+                    });
+
+                    return `
+                        <h2 class="text-xl font-semibold ${colorClass} mb-4">${title}</h2>
+                        <div class="overflow-x-auto mb-8">
+                            <table class="w-full border-collapse table-auto text-sm text-left">
+                                <thead class="bg-gray-200">
+                                    <tr>
+                                        <th class="py-3 px-4 text-center font-bold">No.</th>
+                                        <th class="py-3 px-4 font-bold">Nama Ekspedisi</th>
+                                        <th class="py-3 px-4 text-center font-bold">Jumlah Dokumen</th>
+                                        <th class="py-3 px-4 text-right font-bold">Total Harga</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                    <tr class="bg-gray-200 font-bold">
+                                        <td colspan="2" class="py-3 px-4 text-right">TOTAL</td>
+                                        <td class="py-3 px-4 text-center">${totalCount} Dokumen</td>
+                                        <td class="py-3 px-4 text-right">${formatCurrency(grandTotal)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                };
+
+                summaryContent.innerHTML = generateTableHTML(pendingSummary, 'Status Belum Selesai (Pending)', 'text-red-600') +
+                                           generateTableHTML(doneSummary, 'Status Selesai (Done)', 'text-green-600');
+            };
+
+            window.editLaporanRow = (docIndex, itemIndex) => {
+                currentLaporanRow = docIndex;
+                currentLaporanItemIndex = itemIndex;
+                const doc = savedDocuments[docIndex];
+                
+                document.getElementById('editLaporanNoBA').value = doc.noBA;
+                document.getElementById('editLaporanTanggal').value = formatDateForInput(doc.tanggal);
+                document.getElementById('editLaporanBulan').value = doc.tanggal !== '-' ? formatMonth(doc.tanggal) : '-';
+                document.getElementById('editLaporanEkspedisi').value = doc.ekspedisi;
+                document.getElementById('editLaporanTotalHarga').value = doc.totalHarga;
+                document.getElementById('editLaporanTujuan').value = doc.tujuan;
+                
+                document.getElementById('editLaporanTanggalEmail').value = formatDateForInput(doc.tanggalEmailExpedisi);
+                document.getElementById('editLaporanTanggalApprovalExpedisi').value = formatDateForInput(doc.tanggalApprovalExpedisi);
+                document.getElementById('editLaporanTanggalEmailAccounting').value = formatDateForInput(doc.tanggalEmailAccounting);
+                document.getElementById('editLaporanTanggalAdjustment').value = formatDateForInput(doc.tanggalAdjustment);
+                document.getElementById('editLaporanNoAdjustment').value = doc.noAdjustment;
+                document.getElementById('editLaporanTanggalAdjustWMS').value = formatDateForInput(doc.tanggalAdjustWMS);
+                document.getElementById('editLaporanPengajuanKeBerapa').value = doc.pengajuanKeBerapa;
+                document.getElementById('editLaporanKeteranganUpdate').value = doc.keteranganUpdate;
+
+                if (itemIndex !== -1 && doc.items.length > 0) {
+                    const item = doc.items[itemIndex];
+                    document.getElementById('editLaporanContainer').value = item.container;
+                    document.getElementById('editLaporanLm').value = item.lm;
+                    document.getElementById('editLaporanItemNo').value = item.itemNo;
+                    document.getElementById('editLaporanDescription').value = item.description;
+                    document.getElementById('editLaporanUom').value = item.uom;
+                    document.getElementById('editLaporanQty').value = item.qtyAdjust.replace(',', '.');
+                    document.getElementById('editLaporanLpn').value = item.lpn || '';
+                    document.getElementById('editLaporanPrice').value = item.fixPrice.replace(',', '.');
+                } else {
+                    document.getElementById('editLaporanContainer').value = '';
+                    document.getElementById('editLaporanLm').value = '';
+                    document.getElementById('editLaporanItemNo').value = '';
+                    document.getElementById('editLaporanDescription').value = '';
+                    document.getElementById('editLaporanUom').value = '';
+                    document.getElementById('editLaporanQty').value = '';
+                    document.getElementById('editLaporanLpn').value = '';
+                    document.getElementById('editLaporanPrice').value = '';
+                }
+
+                laporanEditForm.classList.add('active');
+                overlay.classList.add('active');
+            };
+
+            window.saveLaporanChanges = () => {
+                if (currentLaporanRow !== null) {
+                    const doc = savedDocuments[currentLaporanRow];
+                    doc.noBA = document.getElementById('editLaporanNoBA').value;
+                    const newDate = document.getElementById('editLaporanTanggal').value;
+                    doc.tanggal = formatDate(newDate);
+                    doc.ekspedisi = document.getElementById('editLaporanEkspedisi').value;
+                    doc.totalHarga = parseFloat(document.getElementById('editLaporanTotalHarga').value).toFixed(3);
+                    doc.tujuan = document.getElementById('editLaporanTujuan').value;
+                    
+                    doc.tanggalEmailExpedisi = formatDate(document.getElementById('editLaporanTanggalEmail').value) || '-';
+                    doc.tanggalApprovalExpedisi = formatDate(document.getElementById('editLaporanTanggalApprovalExpedisi').value) || '-';
+                    doc.tanggalEmailAccounting = formatDate(document.getElementById('editLaporanTanggalEmailAccounting').value) || '-';
+                    doc.tanggalAdjustment = formatDate(document.getElementById('editLaporanTanggalAdjustment').value) || '-';
+                    doc.noAdjustment = document.getElementById('editLaporanNoAdjustment').value;
+                    doc.tanggalAdjustWMS = formatDate(document.getElementById('editLaporanTanggalAdjustWMS').value) || '-';
+                    doc.pengajuanKeBerapa = document.getElementById('editLaporanPengajuanKeBerapa').value || '-';
+                    doc.keteranganUpdate = document.getElementById('editLaporanKeteranganUpdate').value;
+
+                    if (currentLaporanItemIndex !== -1 && doc.items.length > 0) {
+                        const item = doc.items[currentLaporanItemIndex];
+                        item.container = document.getElementById('editLaporanContainer').value;
+                        item.lm = document.getElementById('editLaporanLm').value;
+                        item.itemNo = document.getElementById('editLaporanItemNo').value;
+                        item.description = document.getElementById('editLaporanDescription').value;
+                        item.uom = document.getElementById('editLaporanUom').value;
+                        item.qtyAdjust = parseFloat(document.getElementById('editLaporanQty').value).toFixed(0);
+                        item.lpn = document.getElementById('editLaporanLpn').value;
+                        item.fixPrice = parseFloat(document.getElementById('editLaporanPrice').value).toFixed(3);
+                    }
+                    saveToLocalStorage();
+                    renderLaporan();
+                    renderSummary();
+                    closeLaporanForm();
+                }
+            };
+
+            window.closeLaporanForm = () => {
+                laporanEditForm.classList.remove('active');
+                overlay.classList.remove('active');
+                currentLaporanRow = null;
+                currentLaporanItemIndex = null;
+            };
+
+            window.deleteLaporanRow = (docIndex, itemIndex) => {
+                if (confirm('Apakah Anda yakin ingin menghapus baris ini?')) {
+                    if (itemIndex !== -1 && savedDocuments[docIndex].items.length > 1) {
+                        savedDocuments[docIndex].items.splice(itemIndex, 1);
+                    } else {
+                        savedDocuments.splice(docIndex, 1);
+                    }
+                    saveToLocalStorage();
+                    populateMonthFilter();
+                    renderLaporan();
+                    renderSummary();
+                }
+            };
+
+            addLaporanRowBtn.addEventListener('click', () => {
+                const newDoc = {
+                    noBA: "No. Baru",
+                    tanggal: new Date().toISOString().slice(0, 10),
+                    ekspedisi: "Nama Ekspedisi Baru",
+                    tujuan: "Tujuan Baru",
+                    totalHarga: "0.000",
+                    tanggalEmailExpedisi: '-',
+                    tanggalApprovalExpedisi: '-',
+                    tanggalEmailAccounting: '-',
+                    tanggalAdjustment: '-',
+                    noAdjustment: '',
+                    tanggalAdjustWMS: '-',
+                    pengajuanKeBerapa: '-',
+                    keteranganUpdate: '',
+                    items: [{
+                        container: "",
+                        lm: "",
+                        itemNo: "",
+                        description: "",
+                        uom: "",
+                        qtyAdjust: "0",
+                        lpn: "",
+                        fixPrice: "0.000"
+                    }]
+                };
+                savedDocuments.push(newDoc);
+                saveToLocalStorage();
+                populateMonthFilter();
+                renderLaporan();
+                renderSummary();
+                editLaporanRow(savedDocuments.length - 1, 0);
+            });
+
+            exportLaporanCsvBtn.addEventListener('click', () => {
+                let csv = [];
+                const headers = ["STATUS", "NO. BA", "BULAN", "TANGGAL", "NAMA EKSPEDISI", "TOTAL HARGA", "TUJUAN", "TANGGAL EMAIL KE EXPEDISI", "TANGGAL DI APPROVAL EXPEDISI", "TANGGAL EMAIL KE ACCOUNTING", "TANGGAL ADJUSTMENT", "NO ADJUSTMENT", "TANGGAL ADJUST WMS", "PENGAJUAN KE BERAPA", "KETERANGAN UPDATE", "NO CONTAINER", "NO LM", "ITEM NO", "DESCRIPTION", "UOM", "QTY ADJUST", "LPN", "FIX PRICE/UNIT"];
+                csv.push(headers.join(","));
+                savedDocuments.forEach(doc => {
+                    const statusText = doc.noAdjustment && doc.noAdjustment !== '' ? 'Done' : 'Belum Selesai';
+                    const bulan = doc.tanggal !== '-' ? formatMonth(doc.tanggal) : '-';
+                    if (doc.items && doc.items.length > 0) {
+                        doc.items.forEach(item => {
+                            const rowData = [
+                                statusText,
+                                doc.noBA,
+                                bulan,
+                                doc.tanggal,
+                                doc.ekspedisi,
+                                doc.totalHarga,
+                                doc.tujuan,
+                                doc.tanggalEmailExpedisi,
+                                doc.tanggalApprovalExpedisi,
+                                doc.tanggalEmailAccounting,
+                                doc.tanggalAdjustment,
+                                doc.noAdjustment,
+                                doc.tanggalAdjustWMS,
+                                doc.pengajuanKeBerapa,
+                                doc.keteranganUpdate,
+                                item.container,
+                                item.lm,
+                                item.itemNo,
+                                item.description,
+                                item.uom,
+                                item.qtyAdjust,
+                                item.lpn,
+                                item.fixPrice
+                            ];
+                            csv.push(rowData.map(item => `"${item}"`).join(","));
+                        });
+                    }
+                });
+                const csvString = csv.join("\n");
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.setAttribute("href", URL.createObjectURL(blob));
+                link.setAttribute("download", `laporan_berita_acara.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+            
+            exportSummaryXlsxBtn.addEventListener('click', () => {
+                const summaryData = [];
+                const pendingSummary = {};
+                const doneSummary = {};
+
+                savedDocuments.forEach(doc => {
+                    const status = doc.noAdjustment && doc.noAdjustment !== '' ? 'done' : 'pending';
+                    const summary = status === 'done' ? doneSummary : pendingSummary;
+                    const grandTotal = parseFloat(doc.totalHarga) || 0;
+
+                    if (!summary[doc.ekspedisi]) {
+                        summary[doc.ekspedisi] = {
+                            count: 0,
+                            totalPrice: 0
+                        };
+                    }
+                    summary[doc.ekspedisi].count++;
+                    summary[doc.ekspedisi].totalPrice += grandTotal;
+                });
+
+                summaryData.push(["STATUS BELUM SELESAI (PENDING)"]);
+                summaryData.push(["No.", "Nama Ekspedisi", "Jumlah Dokumen", "Total Harga"]);
+                let pendingTotalHarga = 0;
+                let pendingTotalDokumen = 0;
+                Object.keys(pendingSummary).forEach((ekspedisi, index) => {
+                    const data = pendingSummary[ekspedisi];
+                    summaryData.push([index + 1, ekspedisi, data.count, data.totalPrice]);
+                    pendingTotalDokumen += data.count;
+                    pendingTotalHarga += data.totalPrice;
+                });
+                summaryData.push(["TOTAL", "", pendingTotalDokumen, pendingTotalHarga]);
+                summaryData.push([]); // Empty row for separation
+
+                summaryData.push(["STATUS SELESAI (DONE)"]);
+                summaryData.push(["No.", "Nama Ekspedisi", "Jumlah Dokumen", "Total Harga"]);
+                let doneTotalHarga = 0;
+                let doneTotalDokumen = 0;
+                Object.keys(doneSummary).forEach((ekspedisi, index) => {
+                    const data = doneSummary[ekspedisi];
+                    summaryData.push([index + 1, ekspedisi, data.count, data.totalPrice]);
+                    doneTotalDokumen += data.count;
+                    doneTotalHarga += data.totalPrice;
+                });
+                summaryData.push(["TOTAL", "", doneTotalDokumen, doneTotalHarga]);
+                
+                let csvContent = "";
+                summaryData.forEach(row => {
+                    csvContent += row.map(e => `"${e}"`).join(",") + "\n";
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.setAttribute("href", URL.createObjectURL(blob));
+                link.setAttribute("download", `ringkasan_laporan.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+            
+            const handleImportLaporanFile = (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    const lines = content.split('\n').filter(line => line.trim() !== '');
+                    const newDocuments = [];
+                    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+                    
+                    const headerMap = {
+                        "STATUS": "status",
+                        "NO. BA": "noBA",
+                        "TANGGAL": "tanggal",
+                        "NAMA EKSPEDISI": "ekspedisi",
+                        "TOTAL HARGA": "totalHarga",
+                        "TUJUAN": "tujuan",
+                        "TANGGAL EMAIL KE EXPEDISI": "tanggalEmailExpedisi",
+                        "TANGGAL DI APPROVAL EXPEDISI": "tanggalApprovalExpedisi",
+                        "TANGGAL EMAIL KE ACCOUNTING": "tanggalEmailAccounting",
+                        "TANGGAL ADJUSTMENT": "tanggalAdjustment",
+                        "NO ADJUSTMENT": "noAdjustment",
+                        "TANGGAL ADJUST WMS": "tanggalAdjustWMS",
+                        "PENGAJUAN KE BERAPA": "pengajuanKeBerapa",
+                        "KETERANGAN UPDATE": "keteranganUpdate",
+                        "NO CONTAINER": "container",
+                        "NO LM": "lm",
+                        "ITEM NO": "itemNo",
+                        "DESCRIPTION": "description",
+                        "UOM": "uom",
+                        "QTY ADJUST": "qtyAdjust",
+                        "LPN": "lpn",
+                        "FIX PRICE/UNIT": "fixPrice"
+                    };
+
+                    for (let i = 1; i < lines.length; i++) {
+                        const data = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(item => item.replace(/"/g, '').trim());
+                        const newDoc = {
+                            items: []
+                        };
+                        const newItem = {};
+                        
+                        headers.forEach((header, index) => {
+                            const key = headerMap[header];
+                            if (key) {
+                                if (["container", "lm", "itemNo", "description", "uom", "qtyAdjust", "lpn", "fixPrice"].includes(key)) {
+                                    newItem[key] = data[index];
+                                } else {
+                                    newDoc[key] = data[index];
+                                }
+                            }
+                        });
+                        newDoc.items.push(newItem);
+                        newDocuments.push(newDoc);
+                    }
+                    if (newDocuments.length > 0) {
+                        savedDocuments = [...savedDocuments, ...newDocuments];
+                        saveToLocalStorage();
+                        populateMonthFilter();
+                        renderLaporan();
+                        renderSummary();
+                        alert("File berhasil diimpor!");
+                    } else {
+                        alert("Gagal membaca file atau format file tidak sesuai.");
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            importLaporanFile.addEventListener('change', handleImportLaporanFile);
+
+
+            summaryMenu.addEventListener('click', (e) => {
+                e.preventDefault();
+                beritaAcaraView.classList.add('hidden');
+                laporanView.classList.add('hidden');
+                summaryView.classList.remove('hidden');
+                renderSummary();
+            });
+
+            laporanMenu.addEventListener('click', (e) => {
+                e.preventDefault();
+                beritaAcaraView.classList.add('hidden');
+                summaryView.classList.add('hidden');
+                laporanView.classList.remove('hidden');
+                renderLaporan();
+            });
+
+            beritaAcaraMenu.addEventListener('click', (e) => {
+                e.preventDefault();
+                laporanView.classList.add('hidden');
+                summaryView.classList.add('hidden');
+                beritaAcaraView.classList.remove('hidden');
+            });
+            
+            docNumberInput.addEventListener('input', () => {
+                docNumberDisplay.textContent = `NO. ${docNumberInput.value}/CMSS/25`;
+            });
+            ekspedisiInput.addEventListener('input', () => {
+                ekspedisiDisplay.textContent = `: ${ekspedisiInput.value}`;
+            });
+            createDateInput.addEventListener('input', () => {
+                createDateMonth.textContent = formatMonth(createDateInput.value);
+                createDateDisplay.textContent = `: ${formatDate(createDateInput.value)}`;
+            });
+            printDateInput.addEventListener('input', () => {
+                printDateMonth.textContent = formatMonth(printDateInput.value);
+                printDateDisplay.textContent = `: ${formatDate(printDateInput.value)}`;
+            });
+            sentDateInput.addEventListener('input', () => {
+                sentDateMonth.textContent = formatMonth(sentDateInput.value);
+                sentDateDisplay.textContent = `: ${formatDate(sentDateInput.value)}`;
+            });
+            receivedDateInput.addEventListener('input', () => {
+                receivedDateMonth.textContent = formatMonth(receivedDateInput.value);
+                receivedDateDisplay.textContent = `: ${formatDate(receivedDateInput.value)}`;
+            });
+            tujuanInput.addEventListener('input', () => {
+                tujuanDisplay.textContent = `: ${tujuanInput.value}`;
+            });
+
+            loadFromLocalStorage();
+            const initialDocNumber = docNumberDisplay.textContent.match(/NO\. (.*)\/CMSS\/.*/)[1];
+            docNumberInput.value = initialDocNumber;
+            const initialEkspedisi = ekspedisiDisplay.textContent.substring(2).trim();
+            ekspedisiInput.value = initialEkspedisi;
+            const initialTujuan = tujuanDisplay.textContent.substring(2).trim();
+            tujuanInput.value = initialTujuan;
+
+            const today = new Date().toISOString().slice(0, 10);
+            createDateInput.value = today;
+            printDateInput.value = today;
+            sentDateInput.value = today;
+            receivedDateInput.value = today;
+            
+            createDateMonth.textContent = formatMonth(today);
+            createDateDisplay.textContent = `: ${formatDate(today)}`;
+            printDateMonth.textContent = formatMonth(today);
+            printDateDisplay.textContent = `: ${formatDate(today)}`;
+            sentDateMonth.textContent = formatMonth(today);
+            sentDateDisplay.textContent = `: ${formatDate(today)}`;
+            receivedDateMonth.textContent = formatMonth(today);
+            receivedDateDisplay.textContent = `: ${formatDate(today)}`;
+
+            calculateTotals();
+            populateMonthFilter();
+            renderLaporan();
+            renderSummary();
+        });
+    </script>
+</body>
+</html>
